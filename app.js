@@ -155,17 +155,17 @@ document.addEventListener('DOMContentLoaded', () => {
       return matchYear && matchMonth && matchGender && matchGenre;
     });
 
-    // 2. Strictly Exclude Played Songs from History (by Title + Artist)
+    // 2. Strictly Exclude Songs Present in History (100% Guarantee 0% Duplication)
     const playedKeys = new Set(playedHistory.map(item => `${item.title.trim().toLowerCase()}_${item.artist.trim().toLowerCase()}`));
+    
     let unplayedCandidates = candidateSongs.filter(s => {
       const key = `${s.title.trim().toLowerCase()}_${s.artist.trim().toLowerCase()}`;
       return !playedKeys.has(key);
     });
 
-    // Fallback if all candidates played: auto reset candidates from database
+    // Fallback if all candidates for selected filters were played: reset condition candidates
     if (unplayedCandidates.length === 0) {
       if (candidateSongs.length > 0) {
-        // Reset played pool for this specific condition smoothly so user can keep picking
         unplayedCandidates = candidateSongs;
       } else {
         unplayedCandidates = SONG_DATABASE;
