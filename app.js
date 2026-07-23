@@ -206,6 +206,8 @@ document.addEventListener('DOMContentLoaded', () => {
       itemEl.className = 'history-item';
 
       const genderIcon = song.gender === '남성' ? '👨' : (song.gender === '여성' ? '👩' : '👫');
+      const displayYear = song.releaseYear || song.year || 2024;
+      const displayMonth = song.releaseMonth || song.month || 1;
 
       itemEl.innerHTML = `
         <div class="item-left">
