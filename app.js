@@ -1,4 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
+  const startYearSelect = document.getElementById('startYearSelect');
+  const endYearSelect = document.getElementById('endYearSelect');
+  const presetBtns = document.querySelectorAll('.preset-btn');
   const pickBtn = document.getElementById('pickBtn');
   const slotSection = document.getElementById('slotSection');
   const slotDisplay = document.getElementById('slotDisplay');
@@ -22,7 +25,48 @@ document.addEventListener('DOMContentLoaded', () => {
   // Played Songs State Array (Loaded from localStorage)
   let playedHistory = JSON.parse(localStorage.getItem('tj_played_history')) || [];
 
+  // Available Year Range in DB
+  const minDbYear = 1980;
+  const maxDbYear = 2026;
+
+  // Populate Start & End Year Options (Restored)
+  function initYearOptions() {
+    startYearSelect.innerHTML = '';
+    endYearSelect.innerHTML = '';
+
+    for (let y = maxDbYear; y >= minDbYear; y--) {
+      const startOpt = document.createElement('option');
+      startOpt.value = y;
+      startOpt.textContent = `${y}년`;
+      startYearSelect.appendChild(startOpt);
+
+      const endOpt = document.createElement('option');
+      endOpt.value = y;
+      endOpt.textContent = `${y}년`;
+      endYearSelect.appendChild(endOpt);
+    }
+
+    // Default: 1980 ~ 2026
+    startYearSelect.value = minDbYear;
+    endYearSelect.value = maxDbYear;
+  }
+
+  initYearOptions();
   renderHistoryList();
+
+  // Preset Buttons Event Listeners
+  presetBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      presetBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+
+      const start = btn.dataset.start;
+      const end = btn.dataset.end;
+
+      startYearSelect.value = start;
+      endYearSelect.value = end;
+    });
+  });
 
   // Helper: Get Checked Values from Name
   function getCheckedValues(name) {
@@ -45,23 +89,26 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // Pick Random Song with Multi-Select Checkboxes (ANY Matching Algorithm)
+  // Pick Random Song (Year Range + Multi-Select Checkboxes for Month, Gender, Genre)
   function pickSong() {
-    const selectedDecades = getCheckedValues('year-chip'); // e.g. ["1980-1989", "1990-1999"]
+    let startY = parseInt(startYearSelect.value, 10);
+    let endY = parseInt(endYearSelect.value, 10);
+
+    // Swap if startYear > endYear
+    if (startY > endY) {
+      [startY, endY] = [endY, startY];
+      startYearSelect.value = startY;
+      endYearSelect.value = endY;
+    }
+
     const selectedMonths = getCheckedValues('month-chip').map(Number); // e.g. [1, 2, 12]
     const selectedGenders = getCheckedValues('gender-chip'); // e.g. ["남성", "여성"]
     const selectedGenres = getCheckedValues('genre-chip'); // e.g. ["댄스", "발라드"]
 
     // Filter Candidate Songs
     let candidateSongs = SONG_DATABASE.filter(song => {
-      // 1. Decade Range Check
-      let matchYear = true;
-      if (selectedDecades.length > 0) {
-        matchYear = selectedDecades.some(range => {
-          const [start, end] = range.split('-').map(Number);
-          return song.year >= start && song.year <= end;
-        });
-      }
+      // 1. Year Range Check (startY <= song.year <= endY)
+      const matchYear = song.year >= startY && song.year <= endY;
 
       // 2. Month Check
       let matchMonth = true;
