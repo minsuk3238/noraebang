@@ -116,12 +116,20 @@ document.addEventListener('DOMContentLoaded', () => {
     const selectedGenders = getCheckedValues('gender-chip');
     const selectedGenres = getCheckedValues('genre-chip');
 
-    // 2. Dynamically Filter 1.12M Database Entries
+    // 2. Filter Database Entries by ACTUAL SONG RELEASE DATES (releaseYear & releaseMonth)
     let candidateSongs = SONG_DATABASE.filter(song => {
-      const matchYear = song.year >= startY && song.year <= endY;
-      let matchMonth = selectedMonths.length === 0 || selectedMonths.includes(song.month);
+      // Year Range Check based on ACTUAL RELEASE YEAR
+      const matchYear = song.releaseYear >= startY && song.releaseYear <= endY;
+
+      // Month Check based on ACTUAL RELEASE MONTH
+      let matchMonth = selectedMonths.length === 0 || selectedMonths.includes(song.releaseMonth);
+
+      // Gender Check
       let matchGender = selectedGenders.length === 0 || selectedGenders.includes(song.gender);
+
+      // Genre Check
       let matchGenre = selectedGenres.length === 0 || selectedGenres.includes(song.genre);
+
       return matchYear && matchMonth && matchGender && matchGenre;
     });
 
