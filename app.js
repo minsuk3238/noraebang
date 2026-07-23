@@ -1,111 +1,141 @@
+// TJ Karaoke Random Song Picker - Pachinko Slot Reel Engine (No TJ Number)
 document.addEventListener('DOMContentLoaded', () => {
-  const startYearSelect = document.getElementById('startYearSelect');
-  const endYearSelect = document.getElementById('endYearSelect');
-  const presetBtns = document.querySelectorAll('.preset-btn');
+
+  // UI Elements
+  const startYearSelect = document.getElementById('startYear');
+  const endYearSelect = document.getElementById('endYear');
+  const presetButtons = document.querySelectorAll('.preset-btn');
+  const monthChipsContainer = document.getElementById('monthChips');
+
   const pickBtn = document.getElementById('pickBtn');
   const slotSection = document.getElementById('slotSection');
   const slotDisplay = document.getElementById('slotDisplay');
+
   const resultCard = document.getElementById('resultCard');
-  
   const resYear = document.getElementById('resYear');
   const resGenre = document.getElementById('resGenre');
   const resGender = document.getElementById('resGender');
-  const resTjNum = document.getElementById('resTjNum');
   const resTitle = document.getElementById('resTitle');
   const resArtist = document.getElementById('resArtist');
-  const copyBtn = document.getElementById('copyBtn');
   const ytLink = document.getElementById('ytLink');
   const rePickBtn = document.getElementById('rePickBtn');
 
-  // History Panel Elements
-  const historyList = document.getElementById('historyList');
   const historyCount = document.getElementById('historyCount');
+  const historyList = document.getElementById('historyList');
   const clearHistoryBtn = document.getElementById('clearHistoryBtn');
 
-  // Played Songs State Array (Loaded from localStorage)
-  let playedHistory = JSON.parse(localStorage.getItem('tj_played_history')) || [];
+  // State: Played History List
+  let playedHistory = JSON.parse(localStorage.getItem('tj_played_history_v2')) || [];
 
-  // Available Year Range in DB
-  const minDbYear = 1980;
-  const maxDbYear = 2026;
-
-  // Populate Start & End Year Options (Restored)
-  function initYearOptions() {
-    startYearSelect.innerHTML = '';
-    endYearSelect.innerHTML = '';
-
-    for (let y = maxDbYear; y >= minDbYear; y--) {
-      const startOpt = document.createElement('option');
-      startOpt.value = y;
-      startOpt.textContent = `${y}년`;
-      startYearSelect.appendChild(startOpt);
-
-      const endOpt = document.createElement('option');
-      endOpt.value = y;
-      endOpt.textContent = `${y}년`;
-      endYearSelect.appendChild(endOpt);
-    }
-
-    // Default: 1980 ~ 2026
-    startYearSelect.value = minDbYear;
-    endYearSelect.value = maxDbYear;
-  }
-
-  initYearOptions();
+  // Initialize UI
+  initYearSelects();
+  initMonthChips();
+  initPresetButtons();
+  initSelectAllButtons();
   renderHistoryList();
 
-  // Preset Buttons Event Listeners
-  presetBtns.forEach(btn => {
-    btn.addEventListener('click', () => {
-      presetBtns.forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
+  // Populate Year Select Options (1980 ~ 2026)
+  function initYearSelects() {
+    const currentYear = 2026;
+    for (let y = 1980; y <= currentYear; y++) {
+      const opt1 = document.createElement('option');
+      opt1.value = y;
+      opt1.textContent = `${y}년`;
+      startYearSelect.appendChild(opt1);
 
-      const start = btn.dataset.start;
-      const end = btn.dataset.end;
-
-      startYearSelect.value = start;
-      endYearSelect.value = end;
-    });
-  });
-
-  // Helper: Get Checked Values from Name
-  function getCheckedValues(name) {
-    const checkboxes = document.querySelectorAll(`input[name="${name}"]:checked`);
-    return Array.from(checkboxes).map(cb => cb.value);
+      const opt2 = document.createElement('option');
+      opt2.value = y;
+      opt2.textContent = `${y}년`;
+      endYearSelect.appendChild(opt2);
+    }
+    startYearSelect.value = 1980;
+    endYearSelect.value = 2026;
   }
 
-  // Handle Select All / Toggle Buttons
-  document.querySelectorAll('.select-all-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const targetName = btn.dataset.target;
-      const checkboxes = document.querySelectorAll(`input[name="${targetName}"]`);
-      const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+  // Populate Month Checkbox Chips (1 ~ 12)
+  function initMonthChips() {
+    monthChipsContainer.innerHTML = '';
+    for (let m = 1; m <= 12; m++) {
+      const label = document.createElement('label');
+      label.className = 'checkbox-chip checked';
+      label.innerHTML = `
+        <input type="checkbox" class="month-chip" value="${m}" checked>
+        <span>${m}월</span>
+      `;
+      monthChipsContainer.appendChild(label);
+    }
+  }
 
-      checkboxes.forEach(cb => {
-        cb.checked = !allChecked;
+  // Decade Preset Buttons Click Event
+  function initPresetButtons() {
+    presetButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        presetButtons.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        const s = parseInt(btn.dataset.start, 10);
+        const e = parseInt(btn.dataset.end, 10);
+
+        startYearSelect.value = s;
+        endYearSelect.value = e;
       });
-
-      btn.textContent = allChecked ? '전체 선택' : '전체 해제';
     });
+  }
+
+  // Toggle Checkbox Chips Style Event
+  document.addEventListener('change', (e) => {
+    if (e.target.type === 'checkbox') {
+      const parentLabel = e.target.closest('.checkbox-chip');
+      if (parentLabel) {
+        if (e.target.checked) {
+          parentLabel.classList.add('checked');
+        } else {
+          parentLabel.classList.remove('checked');
+        }
+      }
+    }
   });
 
-  // Dynamic Session Auto-Initialization & State Reset Helper
-  function resetDynamicSession() {
-    // Completely reset dynamic slot animation state & clear card views
+  // Select All Checkbox Helper Button
+  function initSelectAllButtons() {
+    document.querySelectorAll('.select-all-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const targetClass = btn.dataset.target;
+        const checkboxes = document.querySelectorAll(`.${targetClass}`);
+        const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+
+        checkboxes.forEach(cb => {
+          cb.checked = !allChecked;
+          const parent = cb.closest('.checkbox-chip');
+          if (parent) {
+            if (!allChecked) parent.classList.add('checked');
+            else parent.classList.remove('checked');
+          }
+        });
+      });
+    });
+  }
+
+  // Get Checked Values
+  function getCheckedValues(className) {
+    return Array.from(document.querySelectorAll(`.${className}:checked`)).map(cb => cb.value);
+  }
+
+  // Dynamic State Reset Helper
+  function resetPachinkoSession() {
     resultCard.classList.add('hidden');
     slotSection.classList.remove('hidden');
-    slotDisplay.textContent = "🎲 동적 추출 초기화 중...";
+    slotDisplay.textContent = "🎰 빠칭코 릴 롤링 시작...";
+    slotDisplay.classList.add('pachinko-spinning');
   }
 
-  // Pick Random Song (Automated Dynamic Initialization on Every Click!)
+  // Pachinko Slot Machine Random Pick Engine
   function pickSong() {
-    // 1. Automate Dynamic Session & View Reset immediately
-    resetDynamicSession();
+    resetPachinkoSession();
 
     let startY = parseInt(startYearSelect.value, 10);
     let endY = parseInt(endYearSelect.value, 10);
 
-    // Swap if startYear > endYear
     if (startY > endY) {
       [startY, endY] = [endY, startY];
       startYearSelect.value = startY;
@@ -116,36 +146,26 @@ document.addEventListener('DOMContentLoaded', () => {
     const selectedGenders = getCheckedValues('gender-chip');
     const selectedGenres = getCheckedValues('genre-chip');
 
-    // 2. Filter Database Entries by ACTUAL SONG RELEASE DATES (releaseYear & releaseMonth)
+    // 1. Filter Database by Song Release Date (releaseYear & releaseMonth)
     let candidateSongs = SONG_DATABASE.filter(song => {
-      // Year Range Check based on ACTUAL RELEASE YEAR
       const matchYear = song.releaseYear >= startY && song.releaseYear <= endY;
-
-      // Month Check based on ACTUAL RELEASE MONTH
       let matchMonth = selectedMonths.length === 0 || selectedMonths.includes(song.releaseMonth);
-
-      // Gender Check
       let matchGender = selectedGenders.length === 0 || selectedGenders.includes(song.gender);
-
-      // Genre Check
       let matchGenre = selectedGenres.length === 0 || selectedGenres.includes(song.genre);
-
       return matchYear && matchMonth && matchGender && matchGenre;
     });
 
-    // 3. Exclude Played History
-    const playedTjNumbers = new Set(playedHistory.map(item => item.tj));
-    const playedTitles = new Set(playedHistory.map(item => `${item.title.trim().toLowerCase()}_${item.artist.trim().toLowerCase()}`));
-
+    // 2. Strictly Exclude Played Songs from History (by Title + Artist)
+    const playedKeys = new Set(playedHistory.map(item => `${item.title.trim().toLowerCase()}_${item.artist.trim().toLowerCase()}`));
     let unplayedCandidates = candidateSongs.filter(s => {
-      const titleKey = `${s.title.trim().toLowerCase()}_${s.artist.trim().toLowerCase()}`;
-      return !playedTjNumbers.has(s.tj) && !playedTitles.has(titleKey);
+      const key = `${s.title.trim().toLowerCase()}_${s.artist.trim().toLowerCase()}`;
+      return !playedKeys.has(key);
     });
 
-    // Fallback handling
+    // Fallback if all candidates played
     if (unplayedCandidates.length === 0) {
       if (candidateSongs.length > 0) {
-        alert("선택하신 조건의 모든 곡을 이미 우측 리스트에서 부르셨습니다! 오른쪽 '전체 삭제' 버튼을 눌러 초기화해 보세요.");
+        alert("선택하신 조건의 모든 곡을 이미 부르셨습니다! 오른쪽 '전체 삭제' 버튼을 눌러 초기화해보세요.");
         unplayedCandidates = candidateSongs;
       } else {
         alert("선택하신 조건에 맞는 곡이 없습니다.");
@@ -155,38 +175,64 @@ document.addEventListener('DOMContentLoaded', () => {
 
     pickBtn.disabled = true;
 
-    // Automated Slot Machine Dynamic Random Selection
+    // Pachinko Reel Fast Rolling Animation (Song Titles & Artists Rapid Scroll)
     let counter = 0;
-    const maxTicks = 15;
+    const maxTicks = 20;
     const interval = setInterval(() => {
-      // Pick random animated seed from database
       const randomSeed = SONG_DATABASE[Math.floor(Math.random() * SONG_DATABASE.length)];
-      slotDisplay.textContent = `[${randomSeed.tj}] ${randomSeed.title}`;
+      slotDisplay.textContent = `🎵 ${randomSeed.title} - ${randomSeed.artist}`;
       counter++;
 
       if (counter >= maxTicks) {
         clearInterval(interval);
-        
-        // Pick final unique candidate from 1.12M dataset with new dynamic seed
+        slotDisplay.classList.remove('pachinko-spinning');
+
+        // Pick Final Song Candidate
         const finalSong = unplayedCandidates[Math.floor(Math.random() * unplayedCandidates.length)];
-        
-        // Auto-record to history and refresh display view
+
+        // Record & Render Result
         addToPlayedHistory(finalSong);
         displayResult(finalSong);
       }
-    }, 80);
+    }, 70);
   }
 
   // Add to Played History
   function addToPlayedHistory(song) {
-    if (!playedHistory.some(item => item.tj === song.tj)) {
+    const key = `${song.title.trim().toLowerCase()}_${song.artist.trim().toLowerCase()}`;
+    const exists = playedHistory.some(item => `${item.title.trim().toLowerCase()}_${item.artist.trim().toLowerCase()}` === key);
+
+    if (!exists) {
       playedHistory.unshift(song);
-      localStorage.setItem('tj_played_history', JSON.stringify(playedHistory));
+      localStorage.setItem('tj_played_history_v2', JSON.stringify(playedHistory));
       renderHistoryList();
     }
   }
 
-  // Render Played Songs List in Right Panel
+  // Display Final Result Card (Clean Pachinko Output - NO TJ NUMBER)
+  function displayResult(song) {
+    slotSection.classList.add('hidden');
+    resultCard.classList.remove('hidden');
+    pickBtn.disabled = false;
+
+    const displayYear = song.releaseYear || song.year || 2024;
+    const displayMonth = song.releaseMonth || song.month || 1;
+
+    resYear.textContent = `${displayYear}년 ${displayMonth}월`;
+    resGenre.textContent = song.genre || '가요';
+    
+    const genderIcon = song.gender === '남성' ? '👨' : (song.gender === '여성' ? '👩' : '👫');
+    resGender.textContent = `${genderIcon} ${song.gender || '가수'}`;
+
+    resTitle.textContent = song.title;
+    resArtist.textContent = song.artist;
+
+    // Youtube Search Link
+    const query = encodeURIComponent(`TJ 노래방 ${song.artist} ${song.title}`);
+    ytLink.href = `https://www.youtube.com/results?search_query=${query}`;
+  }
+
+  // Render Played Songs List in Right Panel (NO TJ NUMBER)
   function renderHistoryList() {
     historyCount.textContent = playedHistory.length;
 
@@ -211,13 +257,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
       itemEl.innerHTML = `
         <div class="item-left">
-          <span class="item-tj">${song.tj}</span>
           <span class="item-title">${song.title}</span>
           <span class="item-artist">${song.artist}</span>
           <span class="item-meta">${genderIcon} ${song.gender || ''} • ${displayYear}년 ${displayMonth}월 • ${song.genre}</span>
         </div>
         <div class="item-actions">
-          <button class="item-copy-btn" data-tj="${song.tj}" title="번호 복사">📋 복사</button>
           <button class="item-del-btn" data-index="${index}" title="삭제">✕</button>
         </div>
       `;
@@ -225,22 +269,12 @@ document.addEventListener('DOMContentLoaded', () => {
       historyList.appendChild(itemEl);
     });
 
-    // History copy button event listeners
-    historyList.querySelectorAll('.item-copy-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const num = e.target.dataset.tj;
-        navigator.clipboard.writeText(num);
-        e.target.textContent = '✅ 복사';
-        setTimeout(() => e.target.textContent = '📋 복사', 1500);
-      });
-    });
-
     // History single item delete event listeners
     historyList.querySelectorAll('.item-del-btn').forEach(btn => {
       btn.addEventListener('click', (e) => {
         const idx = parseInt(e.target.dataset.index, 10);
         playedHistory.splice(idx, 1);
-        localStorage.setItem('tj_played_history', JSON.stringify(playedHistory));
+        localStorage.setItem('tj_played_history_v2', JSON.stringify(playedHistory));
         renderHistoryList();
       });
     });
@@ -251,64 +285,12 @@ document.addEventListener('DOMContentLoaded', () => {
     if (playedHistory.length === 0) return;
     if (confirm('불렀던 곡 리스트를 전부 삭제하고 중복 기록을 초기화할까요?')) {
       playedHistory = [];
-      localStorage.removeItem('tj_played_history');
+      localStorage.removeItem('tj_played_history_v2');
       renderHistoryList();
     }
   });
 
-  // Display Final Result Card (Fix undefined year bug!)
-  function displayResult(song) {
-    const resGender = document.getElementById('resGender');
-
-    slotSection.classList.add('hidden');
-    resultCard.classList.remove('hidden');
-    pickBtn.disabled = false;
-
-    const displayYear = song.releaseYear || song.year || 2024;
-    const displayMonth = song.releaseMonth || song.month || 1;
-
-    resYear.textContent = `${displayYear}년 ${displayMonth}월`;
-    resGenre.textContent = song.genre || '가요';
-    
-    const genderIcon = song.gender === '남성' ? '👨' : (song.gender === '여성' ? '👩' : '👫');
-    resGender.textContent = `${genderIcon} ${song.gender || '가수'}`;
-
-    resTjNum.textContent = song.tj;
-    resTitle.textContent = song.title;
-    resArtist.textContent = song.artist;
-
-    // Youtube Search Link
-    const query = encodeURIComponent(`TJ 노래방 ${song.artist} ${song.title}`);
-    ytLink.href = `https://www.youtube.com/results?search_query=${query}`;
-
-    // Reset Copy Button State
-    copyBtn.textContent = '📋 복사';
-    copyBtn.classList.remove('copied');
-  }
-
-  // Copy TJ Number to Clipboard
-  copyBtn.addEventListener('click', () => {
-    const numToCopy = resTjNum.textContent;
-    navigator.clipboard.writeText(numToCopy).then(() => {
-      copyBtn.textContent = '✅ 복사 완료!';
-      copyBtn.classList.add('copied');
-      setTimeout(() => {
-        copyBtn.textContent = '📋 복사';
-        copyBtn.classList.remove('copied');
-      }, 2000);
-    }).catch(() => {
-      const tempInput = document.createElement('input');
-      tempInput.value = numToCopy;
-      document.body.appendChild(tempInput);
-      tempInput.select();
-      document.execCommand('copy');
-      document.body.removeChild(tempInput);
-      copyBtn.textContent = '✅ 복사 완료!';
-      copyBtn.classList.add('copied');
-    });
-  });
-
-  // Event Listeners
+  // Pick Event Handlers
   pickBtn.addEventListener('click', pickSong);
   rePickBtn.addEventListener('click', pickSong);
 });
