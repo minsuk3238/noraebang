@@ -162,13 +162,12 @@ document.addEventListener('DOMContentLoaded', () => {
       return !playedKeys.has(key);
     });
 
-    // Fallback if all candidates played
+    // Fallback if all candidates played: auto reset candidates from database
     if (unplayedCandidates.length === 0) {
       if (candidateSongs.length > 0) {
-        alert("선택하신 조건의 모든 곡을 이미 부르셨습니다! 오른쪽 '전체 삭제' 버튼을 눌러 초기화해보세요.");
+        // Reset played pool for this specific condition smoothly so user can keep picking
         unplayedCandidates = candidateSongs;
       } else {
-        alert("선택하신 조건에 맞는 곡이 없습니다.");
         unplayedCandidates = SONG_DATABASE;
       }
     }
