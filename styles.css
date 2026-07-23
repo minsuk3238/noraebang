@@ -336,10 +336,90 @@ body {
   color: var(--text-sub);
 }
 
-.range-select-container {
+.group-header {
   display: flex;
+  justify-content: space-between;
   align-items: center;
+  margin-bottom: 6px;
+}
+
+.group-header label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-sub);
+}
+
+.select-all-btn {
+  background: transparent;
+  border: none;
+  color: var(--secondary-neon);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: all 0.15s ease;
+}
+
+.select-all-btn:hover {
+  background: rgba(0, 240, 255, 0.1);
+  text-decoration: underline;
+}
+
+.chip-group {
+  display: flex;
+  flex-wrap: wrap;
   gap: 8px;
+}
+
+.grid-months {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+
+.checkbox-chip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  user-select: none;
+}
+
+.checkbox-chip input[type="checkbox"] {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.checkbox-chip span {
+  display: inline-block;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1.5px solid rgba(255, 255, 255, 0.15);
+  color: var(--text-sub);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 12px;
+  border-radius: 12px;
+  transition: all 0.2s ease;
+  width: 100%;
+  text-align: center;
+}
+
+.checkbox-chip:hover span {
+  border-color: rgba(0, 240, 255, 0.4);
+  color: var(--text-main);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.checkbox-chip input[type="checkbox"]:checked + span {
+  background: rgba(0, 240, 255, 0.15);
+  border-color: var(--secondary-neon);
+  color: var(--secondary-neon);
+  font-weight: 700;
+  box-shadow: 0 0 10px rgba(0, 240, 255, 0.25);
 }
 
 .range-select-container .select-wrapper {

@@ -26,83 +26,113 @@
       </header>
 
       <section class="control-panel">
+        <!-- 1. Decade / Year Multi-Select -->
         <div class="control-group">
-          <label>📅 연도 범위 지정</label>
-          <div class="range-select-container">
-            <div class="select-wrapper">
-              <select id="startYearSelect">
-                <!-- JS 동적 생성 -->
-              </select>
-            </div>
-            <span class="range-separator">~</span>
-            <div class="select-wrapper">
-              <select id="endYearSelect">
-                <!-- JS 동적 생성 -->
-              </select>
-            </div>
+          <div class="group-header">
+            <label>📅 연도대 선택 (중복 가능)</label>
+            <button type="button" class="select-all-btn" data-target="year-chip">전체 선택</button>
           </div>
-
-          <!-- Quick Preset Buttons -->
-          <div class="preset-buttons">
-            <button class="preset-btn active" data-start="1980" data-end="2026">전체</button>
-            <button class="preset-btn" data-start="1980" data-end="1989">80년대</button>
-            <button class="preset-btn" data-start="1990" data-end="1999">90년대</button>
-            <button class="preset-btn" data-start="2000" data-end="2009">00년대</button>
-            <button class="preset-btn" data-start="2010" data-end="2019">10년대</button>
-            <button class="preset-btn" data-start="2020" data-end="2026">20년대~</button>
-          </div>
-        </div>
-
-        <div class="control-group">
-          <label for="monthSelect">🗓️ 월 선택</label>
-          <div class="select-wrapper">
-            <select id="monthSelect">
-              <option value="ALL">✨ 전체 월 (1월~12월)</option>
-              <option value="1">1월</option>
-              <option value="2">2월</option>
-              <option value="3">3월</option>
-              <option value="4">4월</option>
-              <option value="5">5월</option>
-              <option value="6">6월</option>
-              <option value="7">7월</option>
-              <option value="8">8월</option>
-              <option value="9">9월</option>
-              <option value="10">10월</option>
-              <option value="11">11월</option>
-              <option value="12">12월</option>
-            </select>
+          <div class="chip-group" id="yearChipGroup">
+            <label class="checkbox-chip">
+              <input type="checkbox" name="year-chip" value="1980-1989" checked>
+              <span>80년대</span>
+            </label>
+            <label class="checkbox-chip">
+              <input type="checkbox" name="year-chip" value="1990-1999" checked>
+              <span>90년대</span>
+            </label>
+            <label class="checkbox-chip">
+              <input type="checkbox" name="year-chip" value="2000-2009" checked>
+              <span>00년대</span>
+            </label>
+            <label class="checkbox-chip">
+              <input type="checkbox" name="year-chip" value="2010-2019" checked>
+              <span>10년대</span>
+            </label>
+            <label class="checkbox-chip">
+              <input type="checkbox" name="year-chip" value="2020-2026" checked>
+              <span>20년대~</span>
+            </label>
           </div>
         </div>
 
+        <!-- 2. Month Multi-Select -->
         <div class="control-group">
-          <label for="genderSelect">👤 가수 성별</label>
-          <div class="select-wrapper">
-            <select id="genderSelect">
-              <option value="ALL">✨ 전체 (남성 / 여성 / 혼성)</option>
-              <option value="남성">👨 남성 가수 (남자키)</option>
-              <option value="여성">👩 여성 가수 (여자키)</option>
-              <option value="혼성">👫 혼성 / 듀엣</option>
-            </select>
+          <div class="group-header">
+            <label>🗓️ 월 선택 (중복 가능)</label>
+            <button type="button" class="select-all-btn" data-target="month-chip">전체 선택</button>
+          </div>
+          <div class="chip-group grid-months" id="monthChipGroup">
+            <label class="checkbox-chip"><input type="checkbox" name="month-chip" value="1" checked><span>1월</span></label>
+            <label class="checkbox-chip"><input type="checkbox" name="month-chip" value="2" checked><span>2월</span></label>
+            <label class="checkbox-chip"><input type="checkbox" name="month-chip" value="3" checked><span>3월</span></label>
+            <label class="checkbox-chip"><input type="checkbox" name="month-chip" value="4" checked><span>4월</span></label>
+            <label class="checkbox-chip"><input type="checkbox" name="month-chip" value="5" checked><span>5월</span></label>
+            <label class="checkbox-chip"><input type="checkbox" name="month-chip" value="6" checked><span>6월</span></label>
+            <label class="checkbox-chip"><input type="checkbox" name="month-chip" value="7" checked><span>7월</span></label>
+            <label class="checkbox-chip"><input type="checkbox" name="month-chip" value="8" checked><span>8월</span></label>
+            <label class="checkbox-chip"><input type="checkbox" name="month-chip" value="9" checked><span>9월</span></label>
+            <label class="checkbox-chip"><input type="checkbox" name="month-chip" value="10" checked><span>10월</span></label>
+            <label class="checkbox-chip"><input type="checkbox" name="month-chip" value="11" checked><span>11월</span></label>
+            <label class="checkbox-chip"><input type="checkbox" name="month-chip" value="12" checked><span>12월</span></label>
           </div>
         </div>
 
+        <!-- 3. Artist Gender Multi-Select -->
         <div class="control-group">
-          <label for="genreSelect">🎶 장르 선택 (선택사항)</label>
-          <div class="select-wrapper">
-            <select id="genreSelect">
-              <option value="ALL">🎵 전체 장르</option>
-              <option value="댄스">🕺 댄스 / 신나는 곡</option>
-              <option value="발라드">💧 발라드 / 감성</option>
-              <option value="힙합">🎧 힙합 / 랩</option>
-              <option value="록/밴드">🎸 록 / 밴드</option>
-              <option value="트로트">🎺 트로트</option>
-            </select>
+          <div class="group-header">
+            <label>👤 가수 성별 선택 (중복 가능)</label>
+            <button type="button" class="select-all-btn" data-target="gender-chip">전체 선택</button>
+          </div>
+          <div class="chip-group" id="genderChipGroup">
+            <label class="checkbox-chip">
+              <input type="checkbox" name="gender-chip" value="남성" checked>
+              <span>👨 남성 (남자키)</span>
+            </label>
+            <label class="checkbox-chip">
+              <input type="checkbox" name="gender-chip" value="여성" checked>
+              <span>👩 여성 (여자키)</span>
+            </label>
+            <label class="checkbox-chip">
+              <input type="checkbox" name="gender-chip" value="혼성" checked>
+              <span>👫 혼성 / 듀엣</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- 4. Genre Multi-Select -->
+        <div class="control-group">
+          <div class="group-header">
+            <label>🎶 장르 선택 (중복 가능)</label>
+            <button type="button" class="select-all-btn" data-target="genre-chip">전체 선택</button>
+          </div>
+          <div class="chip-group" id="genreChipGroup">
+            <label class="checkbox-chip">
+              <input type="checkbox" name="genre-chip" value="댄스" checked>
+              <span>🕺 댄스</span>
+            </label>
+            <label class="checkbox-chip">
+              <input type="checkbox" name="genre-chip" value="발라드" checked>
+              <span>💧 발라드</span>
+            </label>
+            <label class="checkbox-chip">
+              <input type="checkbox" name="genre-chip" value="힙합" checked>
+              <span>🎧 힙합</span>
+            </label>
+            <label class="checkbox-chip">
+              <input type="checkbox" name="genre-chip" value="록/밴드" checked>
+              <span>🎸 록/밴드</span>
+            </label>
+            <label class="checkbox-chip">
+              <input type="checkbox" name="genre-chip" value="트로트" checked>
+              <span>🎺 트로트</span>
+            </label>
           </div>
         </div>
 
         <button id="pickBtn" class="pick-btn">
           <span class="btn-glow"></span>
-          <span class="btn-text">🎲 랜덤 노래 뽑기!</span>
+          <span class="btn-text">🎲 조건 맞춤 노래 뽑기!</span>
         </button>
       </section>
 

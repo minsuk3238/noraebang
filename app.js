@@ -1,9 +1,4 @@
 document.addEventListener('DOMContentLoaded', () => {
-  const startYearSelect = document.getElementById('startYearSelect');
-  const endYearSelect = document.getElementById('endYearSelect');
-  const monthSelect = document.getElementById('monthSelect');
-  const presetBtns = document.querySelectorAll('.preset-btn');
-  const genreSelect = document.getElementById('genreSelect');
   const pickBtn = document.getElementById('pickBtn');
   const slotSection = document.getElementById('slotSection');
   const slotDisplay = document.getElementById('slotDisplay');
@@ -11,6 +6,7 @@ document.addEventListener('DOMContentLoaded', () => {
   
   const resYear = document.getElementById('resYear');
   const resGenre = document.getElementById('resGenre');
+  const resGender = document.getElementById('resGender');
   const resTjNum = document.getElementById('resTjNum');
   const resTitle = document.getElementById('resTitle');
   const resArtist = document.getElementById('resArtist');
@@ -26,104 +22,79 @@ document.addEventListener('DOMContentLoaded', () => {
   // Played Songs State Array (Loaded from localStorage)
   let playedHistory = JSON.parse(localStorage.getItem('tj_played_history')) || [];
 
-  // Available Year Range in DB
-  const minDbYear = 1980;
-  const maxDbYear = 2026;
-
-  // Populate Start & End Year Options
-  function initYearOptions() {
-    startYearSelect.innerHTML = '';
-    endYearSelect.innerHTML = '';
-
-    for (let y = maxDbYear; y >= minDbYear; y--) {
-      const startOpt = document.createElement('option');
-      startOpt.value = y;
-      startOpt.textContent = `${y}년`;
-      startYearSelect.appendChild(startOpt);
-
-      const endOpt = document.createElement('option');
-      endOpt.value = y;
-      endOpt.textContent = `${y}년`;
-      endYearSelect.appendChild(endOpt);
-    }
-
-    // Default: 1980 ~ 2026
-    startYearSelect.value = minDbYear;
-    endYearSelect.value = maxDbYear;
-  }
-
-  initYearOptions();
   renderHistoryList();
 
-  // Preset Buttons Event Listeners
-  presetBtns.forEach(btn => {
+  // Helper: Get Checked Values from Name
+  function getCheckedValues(name) {
+    const checkboxes = document.querySelectorAll(`input[name="${name}"]:checked`);
+    return Array.from(checkboxes).map(cb => cb.value);
+  }
+
+  // Handle Select All / Toggle Buttons
+  document.querySelectorAll('.select-all-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-      presetBtns.forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
+      const targetName = btn.dataset.target;
+      const checkboxes = document.querySelectorAll(`input[name="${targetName}"]`);
+      const allChecked = Array.from(checkboxes).every(cb => cb.checked);
 
-      const start = btn.dataset.start;
-      const end = btn.dataset.end;
+      checkboxes.forEach(cb => {
+        cb.checked = !allChecked;
+      });
 
-      startYearSelect.value = start;
-      endYearSelect.value = end;
+      btn.textContent = allChecked ? '전체 선택' : '전체 해제';
     });
   });
 
-  // Pick Random Song (Excluding Already Played Songs & Filtering Gender)
+  // Pick Random Song with Multi-Select Checkboxes (ANY Matching Algorithm)
   function pickSong() {
-    let startY = parseInt(startYearSelect.value, 10);
-    let endY = parseInt(endYearSelect.value, 10);
+    const selectedDecades = getCheckedValues('year-chip'); // e.g. ["1980-1989", "1990-1999"]
+    const selectedMonths = getCheckedValues('month-chip').map(Number); // e.g. [1, 2, 12]
+    const selectedGenders = getCheckedValues('gender-chip'); // e.g. ["남성", "여성"]
+    const selectedGenres = getCheckedValues('genre-chip'); // e.g. ["댄스", "발라드"]
 
-    // Swap if startYear > endYear
-    if (startY > endY) {
-      [startY, endY] = [endY, startY];
-      startYearSelect.value = startY;
-      endYearSelect.value = endY;
-    }
-
-    const selectedMonth = monthSelect.value;
-    const genderSelect = document.getElementById('genderSelect');
-    const selectedGender = genderSelect.value;
-    const selectedGenre = genreSelect.value;
-
-    // Filter by year range (startY <= song.year <= endY)
-    let candidateSongs = SONG_DATABASE.filter(s => s.year >= startY && s.year <= endY);
-
-    // Filter by month
-    if (selectedMonth !== 'ALL') {
-      const monthNum = parseInt(selectedMonth, 10);
-      const filteredByMonth = candidateSongs.filter(s => s.month === monthNum);
-      if (filteredByMonth.length > 0) {
-        candidateSongs = filteredByMonth;
+    // Filter Candidate Songs
+    let candidateSongs = SONG_DATABASE.filter(song => {
+      // 1. Decade Range Check
+      let matchYear = true;
+      if (selectedDecades.length > 0) {
+        matchYear = selectedDecades.some(range => {
+          const [start, end] = range.split('-').map(Number);
+          return song.year >= start && song.year <= end;
+        });
       }
-    }
 
-    // Filter by Gender (남성 / 여성 / 혼성)
-    if (selectedGender !== 'ALL') {
-      const filteredByGender = candidateSongs.filter(s => s.gender === selectedGender);
-      if (filteredByGender.length > 0) {
-        candidateSongs = filteredByGender;
+      // 2. Month Check
+      let matchMonth = true;
+      if (selectedMonths.length > 0) {
+        matchMonth = selectedMonths.includes(song.month);
       }
-    }
 
-    // Filter by genre if selected
-    if (selectedGenre !== 'ALL') {
-      const filteredByGenre = candidateSongs.filter(s => s.genre === selectedGenre);
-      if (filteredByGenre.length > 0) {
-        candidateSongs = filteredByGenre;
+      // 3. Gender Check
+      let matchGender = true;
+      if (selectedGenders.length > 0) {
+        matchGender = selectedGenders.includes(song.gender);
       }
-    }
+
+      // 4. Genre Check
+      let matchGenre = true;
+      if (selectedGenres.length > 0) {
+        matchGenre = selectedGenres.includes(song.genre);
+      }
+
+      return matchYear && matchMonth && matchGender && matchGenre;
+    });
 
     // CRITICAL: Exclude Already Played Songs (TJ number match)
     const playedTjNumbers = new Set(playedHistory.map(item => item.tj));
     let unplayedCandidates = candidateSongs.filter(s => !playedTjNumbers.has(s.tj));
 
-    // Handle case if ALL songs in selected range were already played
+    // Handle case if ALL songs in selected criteria were already played
     if (unplayedCandidates.length === 0) {
       if (candidateSongs.length > 0) {
-        alert("선택하신 조건(연도/월/성별/장르)의 모든 곡을 이미 한번씩 다 뽑으셨습니다! 불렀던 곡 리스트를 초기화하거나 조건을 변경해 보세요.");
+        alert("선택하신 체크박스 조건의 모든 곡을 이미 한 번씩 다 뽑으셨습니다! 불렀던 곡 리스트를 초기화하거나 체크 조건을 더 늘려보세요.");
         unplayedCandidates = candidateSongs; // Fallback
       } else {
+        alert("선택하신 조건에 맞는 곡이 없습니다. 체크박스를 1개 이상 선택해 보세요!");
         unplayedCandidates = SONG_DATABASE;
       }
     }
