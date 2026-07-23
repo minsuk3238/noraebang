@@ -69,7 +69,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // Pick Random Song (Excluding Already Played Songs!)
+  // Pick Random Song (Excluding Already Played Songs & Filtering Gender)
   function pickSong() {
     let startY = parseInt(startYearSelect.value, 10);
     let endY = parseInt(endYearSelect.value, 10);
@@ -82,6 +82,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     const selectedMonth = monthSelect.value;
+    const genderSelect = document.getElementById('genderSelect');
+    const selectedGender = genderSelect.value;
     const selectedGenre = genreSelect.value;
 
     // Filter by year range (startY <= song.year <= endY)
@@ -96,6 +98,14 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
 
+    // Filter by Gender (남성 / 여성 / 혼성)
+    if (selectedGender !== 'ALL') {
+      const filteredByGender = candidateSongs.filter(s => s.gender === selectedGender);
+      if (filteredByGender.length > 0) {
+        candidateSongs = filteredByGender;
+      }
+    }
+
     // Filter by genre if selected
     if (selectedGenre !== 'ALL') {
       const filteredByGenre = candidateSongs.filter(s => s.genre === selectedGenre);
@@ -104,14 +114,14 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
 
-    // CRITICAL: Exclude Already Played Songs (TJ number or title+artist match)
+    // CRITICAL: Exclude Already Played Songs (TJ number match)
     const playedTjNumbers = new Set(playedHistory.map(item => item.tj));
     let unplayedCandidates = candidateSongs.filter(s => !playedTjNumbers.has(s.tj));
 
     // Handle case if ALL songs in selected range were already played
     if (unplayedCandidates.length === 0) {
       if (candidateSongs.length > 0) {
-        alert("선택하신 연도/장르 조건의 모든 곡을 이미 한번씩 다 뽑으셨습니다! 불렀던 곡 리스트를 초기화하거나 조건을 변경해 보세요.");
+        alert("선택하신 조건(연도/월/성별/장르)의 모든 곡을 이미 한번씩 다 뽑으셨습니다! 불렀던 곡 리스트를 초기화하거나 조건을 변경해 보세요.");
         unplayedCandidates = candidateSongs; // Fallback
       } else {
         unplayedCandidates = SONG_DATABASE;
@@ -144,9 +154,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Add to Played History
   function addToPlayedHistory(song) {
-    // Avoid duplicate entry if already present
     if (!playedHistory.some(item => item.tj === song.tj)) {
-      playedHistory.unshift(song); // Newest on top
+      playedHistory.unshift(song);
       localStorage.setItem('tj_played_history', JSON.stringify(playedHistory));
       renderHistoryList();
     }
@@ -170,15 +179,15 @@ document.addEventListener('DOMContentLoaded', () => {
     playedHistory.forEach((song, index) => {
       const itemEl = document.createElement('div');
       itemEl.className = 'history-item';
-      
-      const cleanTitle = song.title.replace(/ \(월간 .*위 히트\)/, '');
+
+      const genderIcon = song.gender === '남성' ? '👨' : (song.gender === '여성' ? '👩' : '👫');
 
       itemEl.innerHTML = `
         <div class="item-left">
           <span class="item-tj">${song.tj}</span>
-          <span class="item-title">${cleanTitle}</span>
+          <span class="item-title">${song.title}</span>
           <span class="item-artist">${song.artist}</span>
-          <span class="item-meta">${song.year}년 ${song.month ? song.month + '월' : ''} • ${song.genre}</span>
+          <span class="item-meta">${genderIcon} ${song.gender || ''} • ${song.year}년 • ${song.genre}</span>
         </div>
         <div class="item-actions">
           <button class="item-copy-btn" data-tj="${song.tj}" title="번호 복사">📋 복사</button>
@@ -222,12 +231,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Display Final Result
   function displayResult(song) {
+    const resGender = document.getElementById('resGender');
+
     slotSection.classList.add('hidden');
     resultCard.classList.remove('hidden');
     pickBtn.disabled = false;
 
-    resYear.textContent = `${song.year}년 ${song.month ? song.month + '월' : ''} ${song.rank ? '(Top ' + song.rank + '위)' : ''}`;
+    resYear.textContent = `${song.year}년 ${song.month ? song.month + '월' : ''}`;
     resGenre.textContent = song.genre;
+    
+    const genderIcon = song.gender === '남성' ? '👨' : (song.gender === '여성' ? '👩' : '👫');
+    resGender.textContent = `${genderIcon} ${song.gender || '가수'}`;
+
     resTjNum.textContent = song.tj;
     resTitle.textContent = song.title;
     resArtist.textContent = song.artist;

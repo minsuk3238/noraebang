@@ -499,7 +499,7 @@ select:focus, select:hover {
   margin-bottom: 16px;
 }
 
-.year-badge, .genre-badge {
+.year-badge, .genre-badge, .gender-badge {
   font-size: 12px;
   font-weight: 700;
   padding: 4px 10px;
@@ -516,6 +516,12 @@ select:focus, select:hover {
   background: rgba(0, 240, 255, 0.15);
   color: var(--secondary-neon);
   border: 1px solid rgba(0, 240, 255, 0.3);
+}
+
+.gender-badge {
+  background: rgba(255, 230, 0, 0.15);
+  color: var(--accent-yellow);
+  border: 1px solid rgba(255, 230, 0, 0.4);
 }
 
 /* TJ Number Box */
