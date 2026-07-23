@@ -1,0 +1,269 @@
+document.addEventListener('DOMContentLoaded', () => {
+  const startYearSelect = document.getElementById('startYearSelect');
+  const endYearSelect = document.getElementById('endYearSelect');
+  const monthSelect = document.getElementById('monthSelect');
+  const presetBtns = document.querySelectorAll('.preset-btn');
+  const genreSelect = document.getElementById('genreSelect');
+  const pickBtn = document.getElementById('pickBtn');
+  const slotSection = document.getElementById('slotSection');
+  const slotDisplay = document.getElementById('slotDisplay');
+  const resultCard = document.getElementById('resultCard');
+  
+  const resYear = document.getElementById('resYear');
+  const resGenre = document.getElementById('resGenre');
+  const resTjNum = document.getElementById('resTjNum');
+  const resTitle = document.getElementById('resTitle');
+  const resArtist = document.getElementById('resArtist');
+  const copyBtn = document.getElementById('copyBtn');
+  const ytLink = document.getElementById('ytLink');
+  const rePickBtn = document.getElementById('rePickBtn');
+
+  // History Panel Elements
+  const historyList = document.getElementById('historyList');
+  const historyCount = document.getElementById('historyCount');
+  const clearHistoryBtn = document.getElementById('clearHistoryBtn');
+
+  // Played Songs State Array (Loaded from localStorage)
+  let playedHistory = JSON.parse(localStorage.getItem('tj_played_history')) || [];
+
+  // Available Year Range in DB
+  const minDbYear = 1980;
+  const maxDbYear = 2026;
+
+  // Populate Start & End Year Options
+  function initYearOptions() {
+    startYearSelect.innerHTML = '';
+    endYearSelect.innerHTML = '';
+
+    for (let y = maxDbYear; y >= minDbYear; y--) {
+      const startOpt = document.createElement('option');
+      startOpt.value = y;
+      startOpt.textContent = `${y}년`;
+      startYearSelect.appendChild(startOpt);
+
+      const endOpt = document.createElement('option');
+      endOpt.value = y;
+      endOpt.textContent = `${y}년`;
+      endYearSelect.appendChild(endOpt);
+    }
+
+    // Default: 1980 ~ 2026
+    startYearSelect.value = minDbYear;
+    endYearSelect.value = maxDbYear;
+  }
+
+  initYearOptions();
+  renderHistoryList();
+
+  // Preset Buttons Event Listeners
+  presetBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      presetBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+
+      const start = btn.dataset.start;
+      const end = btn.dataset.end;
+
+      startYearSelect.value = start;
+      endYearSelect.value = end;
+    });
+  });
+
+  // Pick Random Song (Excluding Already Played Songs!)
+  function pickSong() {
+    let startY = parseInt(startYearSelect.value, 10);
+    let endY = parseInt(endYearSelect.value, 10);
+
+    // Swap if startYear > endYear
+    if (startY > endY) {
+      [startY, endY] = [endY, startY];
+      startYearSelect.value = startY;
+      endYearSelect.value = endY;
+    }
+
+    const selectedMonth = monthSelect.value;
+    const selectedGenre = genreSelect.value;
+
+    // Filter by year range (startY <= song.year <= endY)
+    let candidateSongs = SONG_DATABASE.filter(s => s.year >= startY && s.year <= endY);
+
+    // Filter by month
+    if (selectedMonth !== 'ALL') {
+      const monthNum = parseInt(selectedMonth, 10);
+      const filteredByMonth = candidateSongs.filter(s => s.month === monthNum);
+      if (filteredByMonth.length > 0) {
+        candidateSongs = filteredByMonth;
+      }
+    }
+
+    // Filter by genre if selected
+    if (selectedGenre !== 'ALL') {
+      const filteredByGenre = candidateSongs.filter(s => s.genre === selectedGenre);
+      if (filteredByGenre.length > 0) {
+        candidateSongs = filteredByGenre;
+      }
+    }
+
+    // CRITICAL: Exclude Already Played Songs (TJ number or title+artist match)
+    const playedTjNumbers = new Set(playedHistory.map(item => item.tj));
+    let unplayedCandidates = candidateSongs.filter(s => !playedTjNumbers.has(s.tj));
+
+    // Handle case if ALL songs in selected range were already played
+    if (unplayedCandidates.length === 0) {
+      if (candidateSongs.length > 0) {
+        alert("선택하신 연도/장르 조건의 모든 곡을 이미 한번씩 다 뽑으셨습니다! 불렀던 곡 리스트를 초기화하거나 조건을 변경해 보세요.");
+        unplayedCandidates = candidateSongs; // Fallback
+      } else {
+        unplayedCandidates = SONG_DATABASE;
+      }
+    }
+
+    // Hide result card, show slot section
+    resultCard.classList.add('hidden');
+    slotSection.classList.remove('hidden');
+    pickBtn.disabled = true;
+
+    // Slot Machine Animation effect
+    let counter = 0;
+    const maxTicks = 15;
+    const interval = setInterval(() => {
+      const tempSong = SONG_DATABASE[Math.floor(Math.random() * SONG_DATABASE.length)];
+      slotDisplay.textContent = `[${tempSong.tj}] ${tempSong.title}`;
+      counter++;
+
+      if (counter >= maxTicks) {
+        clearInterval(interval);
+        const finalSong = unplayedCandidates[Math.floor(Math.random() * unplayedCandidates.length)];
+        
+        // Record into Played History!
+        addToPlayedHistory(finalSong);
+        displayResult(finalSong);
+      }
+    }, 90);
+  }
+
+  // Add to Played History
+  function addToPlayedHistory(song) {
+    // Avoid duplicate entry if already present
+    if (!playedHistory.some(item => item.tj === song.tj)) {
+      playedHistory.unshift(song); // Newest on top
+      localStorage.setItem('tj_played_history', JSON.stringify(playedHistory));
+      renderHistoryList();
+    }
+  }
+
+  // Render Played Songs List in Right Panel
+  function renderHistoryList() {
+    historyCount.textContent = playedHistory.length;
+
+    if (playedHistory.length === 0) {
+      historyList.innerHTML = `
+        <div class="empty-history">
+          <p>🎤 아직 뽑은 노래가 없습니다.</p>
+          <span>노래를 뽑으면 중복되지 않도록 이곳에 저장됩니다!</span>
+        </div>
+      `;
+      return;
+    }
+
+    historyList.innerHTML = '';
+    playedHistory.forEach((song, index) => {
+      const itemEl = document.createElement('div');
+      itemEl.className = 'history-item';
+      
+      const cleanTitle = song.title.replace(/ \(월간 .*위 히트\)/, '');
+
+      itemEl.innerHTML = `
+        <div class="item-left">
+          <span class="item-tj">${song.tj}</span>
+          <span class="item-title">${cleanTitle}</span>
+          <span class="item-artist">${song.artist}</span>
+          <span class="item-meta">${song.year}년 ${song.month ? song.month + '월' : ''} • ${song.genre}</span>
+        </div>
+        <div class="item-actions">
+          <button class="item-copy-btn" data-tj="${song.tj}" title="번호 복사">📋 복사</button>
+          <button class="item-del-btn" data-index="${index}" title="삭제">✕</button>
+        </div>
+      `;
+
+      historyList.appendChild(itemEl);
+    });
+
+    // History copy button event listeners
+    historyList.querySelectorAll('.item-copy-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const num = e.target.dataset.tj;
+        navigator.clipboard.writeText(num);
+        e.target.textContent = '✅ 복사';
+        setTimeout(() => e.target.textContent = '📋 복사', 1500);
+      });
+    });
+
+    // History single item delete event listeners
+    historyList.querySelectorAll('.item-del-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const idx = parseInt(e.target.dataset.index, 10);
+        playedHistory.splice(idx, 1);
+        localStorage.setItem('tj_played_history', JSON.stringify(playedHistory));
+        renderHistoryList();
+      });
+    });
+  }
+
+  // Clear All History
+  clearHistoryBtn.addEventListener('click', () => {
+    if (playedHistory.length === 0) return;
+    if (confirm('불렀던 곡 리스트를 전부 삭제하고 중복 기록을 초기화할까요?')) {
+      playedHistory = [];
+      localStorage.removeItem('tj_played_history');
+      renderHistoryList();
+    }
+  });
+
+  // Display Final Result
+  function displayResult(song) {
+    slotSection.classList.add('hidden');
+    resultCard.classList.remove('hidden');
+    pickBtn.disabled = false;
+
+    resYear.textContent = `${song.year}년 ${song.month ? song.month + '월' : ''} ${song.rank ? '(Top ' + song.rank + '위)' : ''}`;
+    resGenre.textContent = song.genre;
+    resTjNum.textContent = song.tj;
+    resTitle.textContent = song.title;
+    resArtist.textContent = song.artist;
+
+    // Youtube Search Link
+    const query = encodeURIComponent(`TJ 노래방 ${song.artist} ${song.title}`);
+    ytLink.href = `https://www.youtube.com/results?search_query=${query}`;
+
+    // Reset Copy Button State
+    copyBtn.textContent = '📋 복사';
+    copyBtn.classList.remove('copied');
+  }
+
+  // Copy TJ Number to Clipboard
+  copyBtn.addEventListener('click', () => {
+    const numToCopy = resTjNum.textContent;
+    navigator.clipboard.writeText(numToCopy).then(() => {
+      copyBtn.textContent = '✅ 복사 완료!';
+      copyBtn.classList.add('copied');
+      setTimeout(() => {
+        copyBtn.textContent = '📋 복사';
+        copyBtn.classList.remove('copied');
+      }, 2000);
+    }).catch(() => {
+      const tempInput = document.createElement('input');
+      tempInput.value = numToCopy;
+      document.body.appendChild(tempInput);
+      tempInput.select();
+      document.execCommand('copy');
+      document.body.removeChild(tempInput);
+      copyBtn.textContent = '✅ 복사 완료!';
+      copyBtn.classList.add('copied');
+    });
+  });
+
+  // Event Listeners
+  pickBtn.addEventListener('click', pickSong);
+  rePickBtn.addEventListener('click', pickSong);
+});
