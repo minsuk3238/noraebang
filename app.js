@@ -214,7 +214,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <span class="item-tj">${song.tj}</span>
           <span class="item-title">${song.title}</span>
           <span class="item-artist">${song.artist}</span>
-          <span class="item-meta">${genderIcon} ${song.gender || ''} • ${song.year}년 • ${song.genre}</span>
+          <span class="item-meta">${genderIcon} ${song.gender || ''} • ${displayYear}년 ${displayMonth}월 • ${song.genre}</span>
         </div>
         <div class="item-actions">
           <button class="item-copy-btn" data-tj="${song.tj}" title="번호 복사">📋 복사</button>
@@ -256,7 +256,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Display Final Result
+  // Display Final Result Card (Fix undefined year bug!)
   function displayResult(song) {
     const resGender = document.getElementById('resGender');
 
@@ -264,8 +264,11 @@ document.addEventListener('DOMContentLoaded', () => {
     resultCard.classList.remove('hidden');
     pickBtn.disabled = false;
 
-    resYear.textContent = `${song.year}년 ${song.month ? song.month + '월' : ''}`;
-    resGenre.textContent = song.genre;
+    const displayYear = song.releaseYear || song.year || 2024;
+    const displayMonth = song.releaseMonth || song.month || 1;
+
+    resYear.textContent = `${displayYear}년 ${displayMonth}월`;
+    resGenre.textContent = song.genre || '가요';
     
     const genderIcon = song.gender === '남성' ? '👨' : (song.gender === '여성' ? '👩' : '👫');
     resGender.textContent = `${genderIcon} ${song.gender || '가수'}`;
