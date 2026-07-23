@@ -89,7 +89,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // Pick Random Song (Year Range + Multi-Select Checkboxes for Month, Gender, Genre)
+  // Pick Random Song (Year Range + Multi-Select Checkboxes + On-the-fly Deduplication!)
   function pickSong() {
     let startY = parseInt(startYearSelect.value, 10);
     let endY = parseInt(endYearSelect.value, 10);
@@ -105,24 +105,24 @@ document.addEventListener('DOMContentLoaded', () => {
     const selectedGenders = getCheckedValues('gender-chip'); // e.g. ["남성", "여성"]
     const selectedGenres = getCheckedValues('genre-chip'); // e.g. ["댄스", "발라드"]
 
-    // Filter Candidate Songs
-    let candidateSongs = SONG_DATABASE.filter(song => {
-      // 1. Year Range Check (startY <= song.year <= endY)
+    // 1. Filter raw 56,400 Monthly Chart entries by user criteria
+    let rawCandidates = SONG_DATABASE.filter(song => {
+      // Year Range Check (startY <= song.year <= endY)
       const matchYear = song.year >= startY && song.year <= endY;
 
-      // 2. Month Check
+      // Month Check
       let matchMonth = true;
       if (selectedMonths.length > 0) {
         matchMonth = selectedMonths.includes(song.month);
       }
 
-      // 3. Gender Check
+      // Gender Check
       let matchGender = true;
       if (selectedGenders.length > 0) {
         matchGender = selectedGenders.includes(song.gender);
       }
 
-      // 4. Genre Check
+      // Genre Check
       let matchGenre = true;
       if (selectedGenres.length > 0) {
         matchGenre = selectedGenres.includes(song.genre);
@@ -131,17 +131,28 @@ document.addEventListener('DOMContentLoaded', () => {
       return matchYear && matchMonth && matchGender && matchGenre;
     });
 
-    // CRITICAL: Exclude Already Played Songs (TJ number match)
+    // 2. CRITICAL: Deduplicate Candidate Pool (If a song appears in multiple months, keep 1 unique instance)
+    const uniqueCandidatesMap = new Map();
+    rawCandidates.forEach(song => {
+      const key = `${song.tj}_${song.title.trim().toLowerCase()}_${song.artist.trim().toLowerCase()}`;
+      if (!uniqueCandidatesMap.has(key)) {
+        uniqueCandidatesMap.set(key, song);
+      }
+    });
+
+    let uniqueCandidates = Array.from(uniqueCandidatesMap.values());
+
+    // 3. Exclude Already Played Songs from History
     const playedTjNumbers = new Set(playedHistory.map(item => item.tj));
-    let unplayedCandidates = candidateSongs.filter(s => !playedTjNumbers.has(s.tj));
+    let unplayedCandidates = uniqueCandidates.filter(s => !playedTjNumbers.has(s.tj));
 
     // Handle case if ALL songs in selected criteria were already played
     if (unplayedCandidates.length === 0) {
-      if (candidateSongs.length > 0) {
-        alert("선택하신 체크박스 조건의 모든 곡을 이미 한 번씩 다 뽑으셨습니다! 불렀던 곡 리스트를 초기화하거나 체크 조건을 더 늘려보세요.");
-        unplayedCandidates = candidateSongs; // Fallback
+      if (uniqueCandidates.length > 0) {
+        alert("선택하신 조건의 모든 곡을 이미 한 번씩 다 뽑으셨습니다! 불렀던 곡 리스트를 초기화하거나 조건을 변경해 보세요.");
+        unplayedCandidates = uniqueCandidates; // Fallback
       } else {
-        alert("선택하신 조건에 맞는 곡이 없습니다. 체크박스를 1개 이상 선택해 보세요!");
+        alert("선택하신 조건에 맞는 곡이 없습니다. 다른 체크박스를 선택해 보세요!");
         unplayedCandidates = SONG_DATABASE;
       }
     }
